@@ -5,8 +5,16 @@ import (
 	"strings"
 )
 
-func main() {
+const (
+	SecondsInMinute = 60
+	MinutesInHour   = 60
+	HoursInDay      = 24
 
+	SecondsInHour = SecondsInMinute * MinutesInHour
+	SecondsInDay  = SecondsInHour * HoursInDay
+)
+
+func main() {
 	totalSeconds := 93784
 
 	if totalSeconds == 0 {
@@ -14,12 +22,12 @@ func main() {
 		return
 	}
 
-	days := totalSeconds / 86400
-	remainder := totalSeconds % 86400
-	hours := remainder / 3600
-	remainder = remainder % 3600
-	minutes := remainder / 60
-	seconds := remainder % 60
+	days := totalSeconds / SecondsInDay
+	remainder := totalSeconds % SecondsInDay
+	hours := remainder / SecondsInHour
+	remainder = remainder % SecondsInHour
+	minutes := remainder / SecondsInMinute
+	seconds := remainder % SecondsInMinute
 
 	var parts []string
 

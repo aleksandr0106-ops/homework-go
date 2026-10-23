@@ -10,9 +10,9 @@ func main() {
 		for col := 0; col < N; col++ {
 
 			if (str+col)%2 == 0 {
-				print(" ")
+				fmt.Print(" ")
 			} else {
-				print("#")
+				fmt.Print("#")
 			}
 		}
 		fmt.Println()

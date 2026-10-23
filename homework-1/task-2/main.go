@@ -41,7 +41,6 @@ func main() {
 	case Gold:
 		discount = amount * 0.10
 	default:
-		fmt.Println("неизвестный статус")
 		discount = 0.0
 	}
 

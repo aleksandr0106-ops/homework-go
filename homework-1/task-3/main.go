@@ -2,23 +2,26 @@ package main
 
 import "fmt"
 
+const (
+	Contribution = 100000.0
+	Bet          = 0.12
+	MonthsInYear = 12
+)
+
 func main() {
+	monthlyRate := Bet / float64(MonthsInYear)
 
-	contribution := 100000.0
-	bet := 0.12
-	monthlyRate := bet / 12.0
-
-	balance := contribution
+	balance := Contribution
 	fmt.Println()
 
-	for month := 1; month <= 12; month++ {
+	for month := 1; month <= MonthsInYear; month++ {
 
 		balance = balance + (balance * monthlyRate)
 		fmt.Printf("месяц %2d: %.2f\n", month, balance)
 	}
 
-	balance = contribution
-	target := contribution * 2
+	balance = Contribution
+	target := Contribution * 2
 	months := 0
 
 	fmt.Println()

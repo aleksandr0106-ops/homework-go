@@ -3,7 +3,6 @@ package main
 import "fmt"
 
 func main() {
-
 	for c := -20; c <= 40; c += 10 {
 
 		f := float64(c)*9/5 + 32
