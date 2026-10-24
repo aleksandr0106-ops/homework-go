@@ -3,9 +3,10 @@ package main
 import "fmt"
 
 const (
-	Contribution = 100000.0
-	Bet          = 0.12
-	MonthsInYear = 12
+	Contribution  = 100000.0
+	Bet           = 0.12
+	MonthsInYear  = 12
+	DisplayMonths = 12
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	balance := Contribution
 	fmt.Println()
 
-	for month := 1; month <= MonthsInYear; month++ {
+	for month := 1; month <= DisplayMonths; month++ {
 
 		balance = balance + (balance * monthlyRate)
 		fmt.Printf("месяц %2d: %.2f\n", month, balance)
