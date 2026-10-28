@@ -47,10 +47,10 @@ func main() {
 		Newsletter: true,
 	}
 
-	fmt.Printf("До патча:    %+v\n", profile)
+	fmt.Printf("До патча: %+v\n", profile)
 
 	patch := ProfilePatch{
-		Age:        newInt(31),
+		Age:        new(31),
 		Newsletter: newBool(false),
 	}
 
