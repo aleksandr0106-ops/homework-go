@@ -6,10 +6,6 @@ import (
 )
 
 func FirstUnique(s string) rune {
-	if len(s) == 0 {
-		return 0
-	}
-
 	counts := make(map[rune]int, utf8.RuneCountInString(s))
 
 	for _, r := range s {
