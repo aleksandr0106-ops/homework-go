@@ -164,7 +164,14 @@ func (w *Weapon) Serialize(writer io.Writer) {
 }
 
 func (w *Weapon) Deserialize(reader io.Reader) {
-	fmt.Fscanf(reader, "Weapon|%s|%d|%d|%f\n", &w.name, &w.Damage, &w.Durability, &w.weight)
+	data, _ := io.ReadAll(reader)
+	parts := strings.Split(strings.TrimSpace(string(data)), "|")
+	if len(parts) == 5 {
+		w.name = parts[1]
+		fmt.Sscanf(parts[2], "%d", &w.Damage)
+		fmt.Sscanf(parts[3], "%d", &w.Durability)
+		fmt.Sscanf(parts[4], "%f", &w.weight)
+	}
 }
 
 func (a *Armor) Serialize(writer io.Writer) {
@@ -172,7 +179,28 @@ func (a *Armor) Serialize(writer io.Writer) {
 }
 
 func (a *Armor) Deserialize(reader io.Reader) {
-	fmt.Fscanf(reader, "Armor|%s|%d|%f\n", &a.name, &a.Defense, &a.weight)
+	date, _ := io.ReadAll(reader)
+	parts := strings.Split(strings.TrimSpace(string(date)), "|")
+	if len(parts) == 4 {
+		a.name = parts[1]
+		fmt.Sscanf(parts[2], "%d", &a.Defense)
+		fmt.Sscanf(parts[3], "%f", &a.weight)
+	}
+}
+
+func (p *Potion) Serialize(writer io.Writer) {
+	fmt.Fprintf(writer, "Potion|%s|%s|%d|%.2f\n", p.name, p.Effect, p.Charges, p.weight)
+}
+
+func (p *Potion) Deserialize(reader io.Reader) {
+	data, _ := io.ReadAll(reader)
+	parts := strings.Split(strings.TrimSpace(string(data)), "|")
+	if len(parts) == 5 {
+		p.name = parts[1]
+		p.Effect = parts[2]
+		fmt.Sscanf(parts[3], "%d", &p.Charges)
+		fmt.Sscanf(parts[4], "%f", &p.weight)
+	}
 }
 
 func (inv *Inventory) Save(w io.Writer) {
@@ -195,6 +223,10 @@ func (inv *Inventory) Load(r io.Reader) {
 			a := &Armor{}
 			a.Deserialize(strings.NewReader(line))
 			inv.AddItem(a)
+		} else if strings.HasPrefix(line, "Potion|") {
+			p := &Potion{}
+			p.Deserialize(strings.NewReader(line))
+			inv.AddItem(p)
 		}
 	}
 
@@ -208,11 +240,14 @@ func main() {
 
 	sword := &Weapon{name: "Меч", weight: 5.0, Damage: 10, Durability: 2}
 	shield := &Armor{name: "Щит", weight: 4.5, Defense: 5}
+	shieldА := &Armor{name: "Щит грубой силы", weight: 5.5, Defense: 7}
 	potion := &Potion{name: "Лечебное", weight: 0.5, Effect: "+50 HP", Charges: 1}
 	brokenBow := &Weapon{name: "Сломанный лук", weight: 1.0, Damage: 5, Durability: 0}
 
 	inv.AddItem(sword)
 	inv.AddItem(shield)
+	inv.AddItem(shieldА)
+
 	inv.AddItem(potion)
 	inv.AddItem(brokenBow)
 
@@ -241,7 +276,10 @@ func main() {
 	}
 
 	fmt.Println("\n 5. Названия")
-	fmt.Println(inv.ItemNames())
+	names := inv.ItemNames()
+	for _, name := range names {
+		fmt.Println(name)
+	}
 
 	fmt.Println("\n 6. Поиск по имени")
 	found, ok := inv.FindItemByName("Щит")
@@ -263,6 +301,18 @@ func main() {
 
 	fmt.Println("Загруженные предметы:")
 	for _, item := range newInv.Items {
-		fmt.Printf("- %s\n", item.Name())
+		switch v := item.(type) {
+		case *Weapon:
+			fmt.Printf("- Оружие: %s (Урон: %d, Прочность: %d, Вес: %.2f)\n",
+				v.Name(), v.Damage, v.Durability, v.Weight())
+		case *Armor:
+			fmt.Printf("- Броня: %s (Защита: %d, Вес: %.2f)\n",
+				v.Name(), v.Defense, v.Weight())
+		case *Potion:
+			fmt.Printf("- Зелье: %s (Эффект: %s, Заряды: %d, Вес: %.2f)\n",
+				v.Name(), v.Effect, v.Charges, v.Weight())
+		default:
+			fmt.Printf("- Предмет: %s (Вес: %.2f)\n", item.Name(), item.Weight())
+		}
 	}
 }
