@@ -57,10 +57,11 @@ func (w *Weapon) Use() (string, error) {
 }
 
 type Armor struct {
-	ID      int
-	name    string
-	weight  float64
-	Defense int
+	ID         int
+	name       string
+	weight     float64
+	Defense    int
+	Durability int
 }
 
 func (a *Armor) Name() string { return a.name }
@@ -68,7 +69,11 @@ func (a *Armor) Name() string { return a.name }
 func (a *Armor) Weight() float64 { return a.weight }
 
 func (a *Armor) Use() (string, error) {
-	return fmt.Sprintf("Надеваем броню: %s", a.name), nil
+	if a.Durability <= 0 {
+		return "", ErrBroken
+	}
+	a.Durability--
+	return fmt.Sprintf("Надеваем броню: %s (Осталось прочности: %d)", a.name, a.Durability), nil
 }
 
 type Potion struct {
@@ -175,6 +180,8 @@ func (inv *Inventory) BrokenItems() []Item {
 			return v.Durability <= 0
 		case *Potion:
 			return v.Charges <= 0
+		case *Armor:
+			return v.Durability <= 0
 		}
 		return false
 	})
@@ -203,14 +210,12 @@ func DescribeItem(i Item) string {
 	return fmt.Sprintf("%s (вес: %.2f)", i.Name(), i.Weight())
 }
 
-// ==========================================
-// Блок Panic/Recover (с ответами на вопросы)
-// ==========================================
-
 type DangerousItem struct{ name string }
 
-func (d *DangerousItem) Name() string    { return d.name }
+func (d *DangerousItem) Name() string { return d.name }
+
 func (d *DangerousItem) Weight() float64 { return 100 }
+
 func (d *DangerousItem) Use() (string, error) {
 	panic("Взорвалось при использовании!")
 }
@@ -229,8 +234,9 @@ func UseDangerousItem(item Item) (message string, err error) {
 	return item.Use()
 }
 
-func (w *Weapon) Serialize(writer io.Writer) {
-	fmt.Fprintf(writer, "Weapon|%d|%s|%d|%d|%.2f\n", w.ID, w.name, w.Damage, w.Durability, w.weight)
+func (w *Weapon) Serialize(writer io.Writer) error {
+	_, err := fmt.Fprintf(writer, "Weapon|%d|%s|%d|%d|%.2f\n", w.ID, w.name, w.Damage, w.Durability, w.weight)
+	return err
 }
 
 func (w *Weapon) Deserialize(reader io.Reader, lineNum int) error {
@@ -276,8 +282,9 @@ func (w *Weapon) Deserialize(reader io.Reader, lineNum int) error {
 	return nil
 }
 
-func (a *Armor) Serialize(writer io.Writer) {
-	fmt.Fprintf(writer, "Armor|%d|%s|%d|%.2f\n", a.ID, a.name, a.Defense, a.weight)
+func (a *Armor) Serialize(writer io.Writer) error {
+	_, err := fmt.Fprintf(writer, "Armor|%d|%s|%d|%d|%.2f\n", a.ID, a.name, a.Defense, a.Durability, a.weight)
+	return err
 }
 
 func (a *Armor) Deserialize(reader io.Reader, lineNum int) error {
@@ -287,7 +294,7 @@ func (a *Armor) Deserialize(reader io.Reader, lineNum int) error {
 	}
 
 	parts := strings.Split(strings.TrimSpace(string(data)), "|")
-	if len(parts) != 5 {
+	if len(parts) != 6 {
 		return &ParseItemError{Line: lineNum, Value: string(data), Err: errors.New("invalid armor format")}
 	}
 
@@ -306,18 +313,24 @@ func (a *Armor) Deserialize(reader io.Reader, lineNum int) error {
 
 	a.Defense = defense
 
-	weight, err := strconv.ParseFloat(parts[4], 64)
+	durability, err := strconv.Atoi(parts[4])
 	if err != nil {
 		return &ParseItemError{Line: lineNum, Value: string(data), Err: err}
 	}
+	a.Durability = durability
 
+	weight, err := strconv.ParseFloat(parts[5], 64)
+	if err != nil {
+		return &ParseItemError{Line: lineNum, Value: string(data), Err: err}
+	}
 	a.weight = weight
 
 	return nil
 }
 
-func (p *Potion) Serialize(writer io.Writer) {
-	fmt.Fprintf(writer, "Potion|%d|%s|%s|%d|%.2f\n", p.ID, p.name, p.Effect, p.Charges, p.weight)
+func (p *Potion) Serialize(writer io.Writer) error {
+	_, err := fmt.Fprintf(writer, "Potion|%d|%s|%s|%d|%.2f\n", p.ID, p.name, p.Effect, p.Charges, p.weight)
+	return err
 }
 
 func (p *Potion) Deserialize(reader io.Reader, lineNum int) error {
@@ -358,14 +371,16 @@ func (p *Potion) Deserialize(reader io.Reader, lineNum int) error {
 }
 
 type Storable interface {
-	Serialize(w io.Writer)
+	Serialize(w io.Writer) error
 	Deserialize(r io.Reader, lineNum int) error
 }
 
 func (inv *Inventory) Save(w io.Writer) error {
 	for _, item := range inv.Items {
 		if storable, ok := item.(Storable); ok {
-			storable.Serialize(w)
+			if err := storable.Serialize(w); err != nil {
+				return fmt.Errorf("ошибка сохранения предмета: %w", err)
+			}
 		}
 	}
 	return nil
@@ -376,6 +391,7 @@ func (inv *Inventory) Load(r io.Reader) error {
 	var errs []error
 	lineNum := 0
 	maxID := 0
+	seenIDs := make(map[int]bool)
 
 	for scanner.Scan() {
 		lineNum++
@@ -403,26 +419,39 @@ func (inv *Inventory) Load(r io.Reader) error {
 			}
 		}
 
-		inv.Items = append(inv.Items, item)
+		var currentID int
 		switch v := item.(type) {
 		case *Weapon:
-			if v.ID > maxID {
-				maxID = v.ID
-			}
+			currentID = v.ID
 		case *Armor:
-			if v.ID > maxID {
-				maxID = v.ID
-			}
+			currentID = v.ID
 		case *Potion:
-			if v.ID > maxID {
-				maxID = v.ID
-			}
+			currentID = v.ID
 		}
+
+		if seenIDs[currentID] {
+			errs = append(errs, &ParseItemError{
+				Line:  lineNum,
+				Value: line,
+				Err:   fmt.Errorf("duplicate ID %d", currentID),
+			})
+			continue
+		}
+
+		seenIDs[currentID] = true
+
+		if currentID > maxID {
+			maxID = currentID
+		}
+
+		inv.Items = append(inv.Items, item)
 	}
+
 	inv.NextID = maxID
 	if err := scanner.Err(); err != nil {
 		errs = append(errs, err)
 	}
+
 	return errors.Join(errs...)
 }
 
@@ -552,6 +581,10 @@ func run(args []string, stdout, stderr io.Writer) error {
 		}
 		if fs.NArg() != 0 {
 			return fmt.Errorf("%w: unexpected arguments: %v", ErrUsage, fs.Args())
+		}
+
+		if *id == 0 {
+			return fmt.Errorf("%w: -id is required", ErrUsage)
 		}
 
 		if inv.DeleteItem(*id) {
