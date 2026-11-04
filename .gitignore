@@ -32,3 +32,6 @@ go.work.sum
 # .idea/
 # .vscode/
 .DS_Store
+
+inventory.txt
+inventory
