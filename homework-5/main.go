@@ -391,7 +391,23 @@ func (inv *Inventory) Load(r io.Reader) error {
 	var errs []error
 	lineNum := 0
 	maxID := 0
+
 	seenIDs := make(map[int]bool)
+	for _, item := range inv.Items {
+		var existingID int
+		switch v := item.(type) {
+		case *Weapon:
+			existingID = v.ID
+		case *Armor:
+			existingID = v.ID
+		case *Potion:
+			existingID = v.ID
+		}
+		seenIDs[existingID] = true
+		if existingID > maxID {
+			maxID = existingID
+		}
+	}
 
 	for scanner.Scan() {
 		lineNum++
@@ -439,7 +455,6 @@ func (inv *Inventory) Load(r io.Reader) error {
 		}
 
 		seenIDs[currentID] = true
-
 		if currentID > maxID {
 			maxID = currentID
 		}
@@ -566,7 +581,11 @@ func run(args []string, stdout, stderr io.Writer) error {
 		}
 
 		msg, err := foundItem.Use()
-		if err != nil {
+		if errors.Is(err, ErrBroken) {
+			return fmt.Errorf("предмет %q сломан и не может быть использован", foundItem.Name())
+		} else if errors.Is(err, ErrExhausted) {
+			return fmt.Errorf("у предмета %q закончились заряды", foundItem.Name())
+		} else if err != nil {
 			return err
 		}
 		successMsg = msg + "\n"
