@@ -117,7 +117,7 @@ func (s *FileStorage) Load() ([]item.Item, error) {
 
 func parseItem(line string, lineNum int) (item.Item, error) {
 	parts := strings.Split(strings.TrimSpace(line), "|")
-	if len(parts) < 6 {
+	if len(parts) != 6 {
 		return nil, &ParseItemError{Line: lineNum, Value: line, Err: errors.New("invalid format")}
 	}
 
