@@ -11,10 +11,17 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 func (s *MemoryStorage) Save(items []item.Item) error {
-	s.items = append([]item.Item(nil), items...)
+	s.items = make([]item.Item, len(items))
+	for i, it := range items {
+		s.items[i] = it.Clone()
+	}
 	return nil
 }
 
 func (s *MemoryStorage) Load() ([]item.Item, error) {
-	return append([]item.Item(nil), s.items...), nil
+	copied := make([]item.Item, len(s.items))
+	for i, it := range s.items {
+		copied[i] = it.Clone()
+	}
+	return copied, nil
 }

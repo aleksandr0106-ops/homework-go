@@ -112,7 +112,6 @@ func (s *FileStorage) Load() ([]item.Item, error) {
 	if err := scanner.Err(); err != nil {
 		errs = append(errs, err)
 	}
-
 	return items, errors.Join(errs...)
 }
 
@@ -129,18 +128,49 @@ func parseItem(line string, lineNum int) (item.Item, error) {
 
 	switch parts[0] {
 	case "Weapon":
-		damage, _ := strconv.Atoi(parts[3])
-		dur, _ := strconv.Atoi(parts[4])
-		w, _ := strconv.ParseFloat(parts[5], 64)
+		damage, err := strconv.Atoi(parts[3])
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
+
+		dur, err := strconv.Atoi(parts[4])
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
+
+		w, err := strconv.ParseFloat(parts[5], 64)
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
 		return item.NewWeapon(id, parts[2], w, damage, dur), nil
+
 	case "Armor":
-		def, _ := strconv.Atoi(parts[3])
-		dur, _ := strconv.Atoi(parts[4])
-		w, _ := strconv.ParseFloat(parts[5], 64)
+		def, err := strconv.Atoi(parts[3])
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
+
+		dur, err := strconv.Atoi(parts[4])
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
+
+		w, err := strconv.ParseFloat(parts[5], 64)
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
 		return item.NewArmor(id, parts[2], w, def, dur), nil
+
 	case "Potion":
-		ch, _ := strconv.Atoi(parts[4])
-		w, _ := strconv.ParseFloat(parts[5], 64)
+		ch, err := strconv.Atoi(parts[4])
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
+
+		w, err := strconv.ParseFloat(parts[5], 64)
+		if err != nil {
+			return nil, &ParseItemError{Line: lineNum, Value: line, Err: err}
+		}
 		return item.NewPotion(id, parts[2], w, parts[3], ch), nil
 	}
 

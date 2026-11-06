@@ -17,6 +17,7 @@ type Item interface {
 	Weight() float64
 	Use() (string, error)
 	IsBroken() bool
+	Clone() Item
 }
 
 type Weapon struct {
@@ -49,6 +50,10 @@ func (w *Weapon) Use() (string, error) {
 	return fmt.Sprintf("Взмах оружием: %s", w.name), nil
 }
 
+func (w *Weapon) Clone() Item {
+	return NewWeapon(w.id, w.name, w.weight, w.Damage, w.Durability)
+}
+
 type Armor struct {
 	id         int
 	name       string
@@ -79,6 +84,10 @@ func (a *Armor) Use() (string, error) {
 	return fmt.Sprintf("Надеваем броню: %s (Осталось прочности: %d)", a.name, a.Durability), nil
 }
 
+func (a *Armor) Clone() Item {
+	return NewArmor(a.id, a.name, a.weight, a.Defense, a.Durability)
+}
+
 type Potion struct {
 	id      int
 	name    string
@@ -107,4 +116,8 @@ func (p *Potion) Use() (string, error) {
 	}
 	p.Charges--
 	return fmt.Sprintf("Выпиваем зелье: %s (%s)", p.name, p.Effect), nil
+}
+
+func (p *Potion) Clone() Item {
+	return NewPotion(p.id, p.name, p.weight, p.Effect, p.Charges)
 }
