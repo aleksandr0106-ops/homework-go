@@ -33,6 +33,7 @@ func TestWeaponUse(t *testing.T) {
 		})
 	}
 }
+
 func TestPotionUse(t *testing.T) {
 	p := NewPotion(1, "Зелье", 0.5, "HP", 1)
 
@@ -49,6 +50,7 @@ func TestPotionUse(t *testing.T) {
 		t.Errorf("Ожидали ошибку ErrExhausted, получили %v", err)
 	}
 }
+
 func TestClone(t *testing.T) {
 	original := NewWeapon(1, "Меч", 5.0, 10, 5)
 	clone := original.Clone().(*Weapon)
@@ -59,6 +61,7 @@ func TestClone(t *testing.T) {
 		t.Errorf("Клон изменился вслед за оригиналом! Ожидали 5, получили %d", clone.Durability)
 	}
 }
+
 func TestArmorUse(t *testing.T) {
 	a := NewArmor(1, "Щит", 5.0, 10, 2)
 
@@ -77,6 +80,7 @@ func TestArmorUse(t *testing.T) {
 		t.Errorf("Ожидали ErrBroken, получили %v", err)
 	}
 }
+
 func TestItemProperties(t *testing.T) {
 	w := NewWeapon(1, "Меч", 5.5, 10, 5)
 

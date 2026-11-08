@@ -18,6 +18,7 @@ func (m *mockStorage) Save(items []item.Item) error {
 	m.items = items
 	return m.err
 }
+
 func TestService_AddAndFind(t *testing.T) {
 	t.Parallel()
 
@@ -45,6 +46,7 @@ func TestService_AddAndFind(t *testing.T) {
 		t.Error("Ожидали ошибку для пустого имени, получили nil")
 	}
 }
+
 func TestService_Delete(t *testing.T) {
 	t.Parallel()
 
@@ -65,6 +67,7 @@ func TestService_Delete(t *testing.T) {
 		t.Error("Ожидали ошибку при удалении несуществующего ID")
 	}
 }
+
 func TestService_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -76,6 +79,7 @@ func TestService_Validation(t *testing.T) {
 		t.Error("Ожидали ошибку из-за символа '|', получили nil")
 	}
 }
+
 func TestService_LoadSave(t *testing.T) {
 	t.Parallel()
 

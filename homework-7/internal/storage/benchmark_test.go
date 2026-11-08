@@ -16,7 +16,9 @@ func BenchmarkStorage_Save(b *testing.B) {
 		store := NewMemoryStorage()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_ = store.Save(items)
+			if err := store.Save(items); err != nil {
+				b.Fatal(err)
+			}
 		}
 	})
 
@@ -26,7 +28,9 @@ func BenchmarkStorage_Save(b *testing.B) {
 		store := NewFileStorage(filePath)
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_ = store.Save(items)
+			if err := store.Save(items); err != nil {
+				b.Fatal(err)
+			}
 		}
 	})
 }
