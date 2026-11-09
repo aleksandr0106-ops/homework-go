@@ -25,15 +25,17 @@ type errorMockStorage struct {
 	saveErr   error
 	loadCalls int
 	saveCalls int
+	items     []item.Item
 }
 
 func (m *errorMockStorage) Load() ([]item.Item, error) {
 	m.loadCalls++
-	return nil, m.loadErr
+	return m.items, m.loadErr
 }
 
 func (m *errorMockStorage) Save(items []item.Item) error {
 	m.saveCalls++
+	m.items = items
 	return m.saveErr
 }
 
@@ -147,5 +149,78 @@ func TestApp_SaveError(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "Добавлен предмет") {
 		t.Errorf("Сообщение об успехе не должно печататься, если Save упал! Вывод: %s", out.String())
+	}
+}
+
+func TestApp_ListDoesNotSave(t *testing.T) {
+	store := &errorMockStorage{}
+	inv := inventory.NewService(store)
+	var out, errOut bytes.Buffer
+	app := NewApp(inv, &out, &errOut)
+
+	err := app.Run([]string{"list"})
+	if err != nil {
+		t.Fatalf("Ошибка list: %v", err)
+	}
+	if store.saveCalls != 0 {
+		t.Errorf("Команда list не должна вызывать Save! Вызван %d раз", store.saveCalls)
+	}
+}
+
+func TestApp_SaveError_Use(t *testing.T) {
+	saveErr := errors.New("save failed")
+	store := &errorMockStorage{
+		saveErr: saveErr,
+		items:   []item.Item{item.NewWeapon(1, "Меч", 5.0, 10, 5)},
+	}
+	inv := inventory.NewService(store)
+	var out, errOut bytes.Buffer
+	app := NewApp(inv, &out, &errOut)
+
+	err := app.Run([]string{"use", "-id", "1"})
+	if !errors.Is(err, saveErr) {
+		t.Errorf("Ожидали ошибку сохранения, получили %v", err)
+	}
+	if out.String() != "" {
+		t.Errorf("stdout должен быть пуст, если Save упал. Получили: %s", out.String())
+	}
+}
+
+func TestApp_SaveError_Delete(t *testing.T) {
+	saveErr := errors.New("save failed")
+	store := &errorMockStorage{
+		saveErr: saveErr,
+		items:   []item.Item{item.NewWeapon(1, "Меч", 5.0, 10, 5)},
+	}
+	inv := inventory.NewService(store)
+	var out, errOut bytes.Buffer
+	app := NewApp(inv, &out, &errOut)
+
+	err := app.Run([]string{"delete", "-id", "1"})
+	if !errors.Is(err, saveErr) {
+		t.Errorf("Ожидали ошибку сохранения, получили %v", err)
+	}
+	if out.String() != "" {
+		t.Errorf("stdout должен быть пуст, если Save упал. Получили: %s", out.String())
+	}
+}
+
+func TestExitCode(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		wantCode int
+	}{
+		{"Успех (nil)", nil, 0},
+		{"Ошибка использования", ErrUsage, 2},
+		{"Операционная ошибка", errors.New("something went wrong"), 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExitCode(tt.err); got != tt.wantCode {
+				t.Errorf("ExitCode(%v) = %d, want %d", tt.err, got, tt.wantCode)
+			}
+		})
 	}
 }

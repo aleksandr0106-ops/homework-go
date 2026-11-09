@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
+	"strconv"
 	"testing"
 
 	"homework-go/homework-7/internal/item"
@@ -12,6 +12,7 @@ import (
 
 func TestMemoryStorage(t *testing.T) {
 	store := NewMemoryStorage()
+
 	originalWeapon := item.NewWeapon(1, "Меч", 5.0, 10, 5)
 	items := []item.Item{originalWeapon}
 
@@ -19,17 +20,25 @@ func TestMemoryStorage(t *testing.T) {
 		t.Fatalf("Ошибка Save: %v", err)
 	}
 
-	loaded, err := store.Load()
-	if err != nil || len(loaded) != 1 {
-		t.Fatalf("Ошибка Load: %v, len=%d", err, len(loaded))
-	}
-
 	originalWeapon.Durability = 1
-	if loaded[0].(*item.Weapon).Durability != 5 {
-		t.Errorf("Копия в памяти изменилась вместе с оригиналом! Ожидали 5, получили %d", loaded[0].(*item.Weapon).Durability)
+
+	loaded2, err := store.Load()
+	if err != nil || len(loaded2) != 1 {
+		t.Fatalf("Ошибка Load: %v", err)
+	}
+	if loaded2[0].(*item.Weapon).Durability != 5 {
+		t.Errorf("Изменение оригинала испортило данные в хранилище! Ожидали 5, получили %d", loaded2[0].(*item.Weapon).Durability)
 	}
 
-	loaded[0].(*item.Weapon).Durability = 3
+	loaded2[0].(*item.Weapon).Durability = 3
+
+	loaded3, err := store.Load()
+	if err != nil || len(loaded3) != 1 {
+		t.Fatalf("Ошибка Load: %v", err)
+	}
+	if loaded3[0].(*item.Weapon).Durability != 5 {
+		t.Errorf("Изменение загруженной копии испортило данные в хранилище! Ожидали 5, получили %d", loaded3[0].(*item.Weapon).Durability)
+	}
 	if originalWeapon.Durability != 1 {
 		t.Errorf("Оригинал изменился вместе с копией! Ожидали 1, получили %d", originalWeapon.Durability)
 	}
@@ -116,12 +125,16 @@ func TestFileStorage_CorruptedAndDuplicates(t *testing.T) {
 		t.Fatalf("Ожидали ParseItemError, получили %T", err)
 	}
 
-	if !strings.Contains(err.Error(), "line 2") || !strings.Contains(err.Error(), "duplicate ID 1") {
-		t.Errorf("Не нашли ошибку дубликата в цепочке ошибок: %v", err)
+	if parseErr.Line != 2 {
+		t.Errorf("Ожидали ошибку в строке 2, получили в строке %d", parseErr.Line)
 	}
 
-	if !strings.Contains(err.Error(), "line 3") {
-		t.Errorf("Не нашли ошибку парсинга в строке 3: %v", err)
+	if !errors.Is(err, ErrDuplicateID) {
+		t.Errorf("Не нашли ошибку ErrDuplicateID в цепочке ошибок: %v", err)
+	}
+
+	if !errors.Is(err, strconv.ErrSyntax) {
+		t.Errorf("Не нашли ошибку strconv.ErrSyntax (неверное число) в цепочке, не нашли")
 	}
 }
 

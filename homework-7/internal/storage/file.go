@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+var ErrDuplicateID = errors.New("duplicate ID")
+
 type ParseItemError struct {
 	Line  int
 	Value string
@@ -101,7 +103,7 @@ func (s *FileStorage) Load() ([]item.Item, error) {
 		}
 
 		if seenIDs[it.ID()] {
-			errs = append(errs, &ParseItemError{Line: lineNum, Value: line, Err: fmt.Errorf("duplicate ID %d", it.ID())})
+			errs = append(errs, &ParseItemError{Line: lineNum, Value: line, Err: fmt.Errorf("%w: %d", ErrDuplicateID, it.ID())})
 			continue
 		}
 

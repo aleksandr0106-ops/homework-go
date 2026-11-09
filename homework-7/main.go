@@ -10,17 +10,6 @@ import (
 	"os"
 )
 
-func exitCode(err error) int {
-	switch {
-	case err == nil, errors.Is(err, flag.ErrHelp):
-		return 0
-	case errors.Is(err, cli.ErrUsage):
-		return 2
-	default:
-		return 1
-	}
-}
-
 func main() {
 	useMemory := flag.Bool("memory", false, "Использовать хранилище в памяти")
 	flag.Parse()
@@ -40,5 +29,5 @@ func main() {
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
 		fmt.Fprintln(os.Stderr, "error:", err)
 	}
-	os.Exit(exitCode(err))
+	os.Exit(cli.ExitCode(err))
 }
