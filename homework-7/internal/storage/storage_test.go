@@ -99,10 +99,10 @@ func TestFileStorage_CorruptedAndDuplicates(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "corrupted.txt")
 
 	content := `Weapon|1|Меч|10|5|5.0
-	Weapon|1|Меч|10|5|5.0
-	Weapon|2|Щит|abc|5|3.0
-	Unknown|3|Зелье|10|5|1.0
-	Armor|4|Броня|5|`
+Weapon|1|Меч|10|5|5.0
+Weapon|2|Щит|abc|5|3.0
+Unknown|3|Зелье|10|5|1.0
+Armor|4|Броня|5|`
 
 	err := os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
@@ -129,12 +129,17 @@ func TestFileStorage_CorruptedAndDuplicates(t *testing.T) {
 		t.Errorf("Ожидали ошибку в строке 2, получили в строке %d", parseErr.Line)
 	}
 
+	expectedValue := "Weapon|1|Меч|10|5|5.0"
+	if parseErr.Value != expectedValue {
+		t.Errorf("Ожидали Value %q, получили %q", expectedValue, parseErr.Value)
+	}
+
 	if !errors.Is(err, ErrDuplicateID) {
 		t.Errorf("Не нашли ошибку ErrDuplicateID в цепочке ошибок: %v", err)
 	}
 
 	if !errors.Is(err, strconv.ErrSyntax) {
-		t.Errorf("Не нашли ошибку strconv.ErrSyntax (неверное число) в цепочке, не нашли")
+		t.Errorf("Не нашли ошибку strconv.ErrSyntax в цепочке ошибок: %v", err)
 	}
 }
 
