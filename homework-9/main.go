@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	var totalCount atomic.Int64
+	var totalCount int
 
 	sem := make(chan struct{}, *k)
 
@@ -58,7 +57,7 @@ func main() {
 			}
 
 			fmt.Printf("Count for %s: %d\n", targetURL, count)
-			totalCount.Add(int64(count))
+			totalCount += count
 		}(url)
 	}
 
@@ -67,7 +66,7 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Printf("Total: %d\n", totalCount.Load())
+	fmt.Printf("Total: %d\n", totalCount)
 }
 
 func fetchAndCount(url string, searchStr string) (int, error) {
